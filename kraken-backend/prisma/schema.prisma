@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum GlobalRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum TeamRole {
+  LEAD
+  MEMBER
+}
+
+enum JobRole {
+  DEVOPS
+  FRONTEND
+  BACKEND
+  QA
+}
+
+enum WalletTxnType {
+  COINS
+  DIAMONDS
+}
+
+enum EnrollmentTrack {
+  PRACTICA_INTERNA
+  INDUCCION
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  DROPPED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique
+  passwordHash String?    @map("password_hash")
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  profile         Profile?
+  wallet          Wallet?
+  memberships     TeamMembership[]
+  createdTeams    Team[]              @relation("TeamCreatedBy")
+  walletTxns      WalletTransaction[] @relation("WalletTxnForUser")
+  awardsGiven     WalletTransaction[] @relation("WalletTxnCreatedBy")
+  offeringsTaught CourseOffering[]    @relation("OfferingTeacher")
+  enrollments     Enrollment[]        @relation("EnrollmentStudent")
+
+  @@map("users")
+}
+
+model Profile {
+  userId    String     @id @map("user_id") @db.Uuid
+  fullName  String     @map("full_name")
+  handle    String?    @unique
+  avatarUrl String?    @map("avatar_url")
+  role      GlobalRole @default(STUDENT)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Wallet {
+  userId          String   @id @map("user_id") @db.Uuid
+  coinsBalance    Int      @default(0) @map("coins_balance")
+  diamondsBalance Int      @default(0) @map("diamonds_balance")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @map("user_id") @db.Uuid
+
+  walletUserId String @map("wallet_user_id") @db.Uuid
+
+  type    WalletTxnType
+  amount  Int
+  reason  String
+  refType String?       @map("ref_type")
+  refId   String?       @map("ref_id")
+
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation("WalletTxnForUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  creator User @relation("WalletTxnCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  wallet Wallet @relation(fields: [walletUserId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([walletUserId, createdAt])
+  @@index([refType, refId])
+  @@map("wallet_transactions")
+}
+
+model Term {
+  id       String    @id @default(uuid()) @db.Uuid
+  name     String
+  year     Int
+  period   String
+  startsAt DateTime? @map("starts_at")
+  endsAt   DateTime? @map("ends_at")
+
+  offerings CourseOffering[]
+
+  @@unique([name])
+  @@index([year, period])
+  @@map("terms")
+}
+
+model Course {
+  id   String @id @default(uuid()) @db.Uuid
+  code String @unique
+  name String
+
+  offerings CourseOffering[]
+
+  @@map("courses")
+}
+
+model CourseOffering {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  termId    String   @map("term_id") @db.Uuid
+  teacherId String   @map("teacher_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  term    Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+  teacher User   @relation("OfferingTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+
+  enrollments Enrollment[]
+  teams       Team[]
+
+  @@index([courseId])
+  @@index([termId])
+  @@index([teacherId])
+  @@map("course_offerings")
+}
+
+model Enrollment {
+  id           String           @id @default(uuid()) @db.Uuid
+  offeringId   String           @map("offering_id") @db.Uuid
+  studentId    String           @map("student_id") @db.Uuid
+  track        EnrollmentTrack
+  academicYear Int              @map("academic_year")
+  status       EnrollmentStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  offering    CourseOffering   @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  student     User             @relation("EnrollmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  memberships TeamMembership[]
+
+  @@unique([offeringId, studentId])
+  @@index([studentId])
+  @@index([offeringId, track])
+  @@map("enrollments")
+}
+
+model Team {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  offeringId String   @map("offering_id") @db.Uuid
+  createdBy  String   @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  offering CourseOffering   @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  creator  User             @relation("TeamCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  members  TeamMembership[]
+
+  @@index([offeringId])
+  @@index([createdBy])
+  @@map("teams")
+}
+
+model TeamMembership {
+  id           String   @id @default(uuid()) @db.Uuid
+  teamId       String   @map("team_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  enrollmentId String   @map("enrollment_id") @db.Uuid
+  teamRole     TeamRole @default(MEMBER) @map("team_role")
+  jobRole      JobRole  @map("job_role")
+  joinedAt     DateTime @default(now()) @map("joined_at")
+
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+  @@index([teamId])
+  @@index([enrollmentId])
+  @@map("team_memberships")
+}

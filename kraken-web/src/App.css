@@ -1,0 +1,44 @@
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 20% 20%, rgba(15, 161, 123, 0.16), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(15, 161, 123, 0.12), transparent 35%),
+    #e9f2ee;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(13, 135, 103, 0.12), rgba(15, 161, 123, 0.08));
+  pointer-events: none;
+}
+
+.dashboard-shell {
+  min-height: 100vh;
+  padding: 28px 28px 48px;
+  background: radial-gradient(circle at 12% 18%, rgba(15, 161, 123, 0.14), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(255, 193, 87, 0.2), transparent 45%),
+    linear-gradient(180deg, #f6fbf8 0%, #edf4f1 100%);
+}
+
+.app-chrome {
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 600px) {
+  .auth-shell {
+    padding: 20px;
+  }
+
+  .dashboard-shell {
+    padding: 20px 20px 32px;
+  }
+}

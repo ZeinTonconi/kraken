@@ -1,0 +1,31 @@
+:root {
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  color: #1f2d3d;
+  background-color: #e9f2ee;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --color-primary: #0fa17b;
+  --color-primary-dark: #0d8767;
+  --color-surface: #f7f9f7;
+  --color-text: #1f2d3d;
+  --color-muted: #6b7a89;
+  --color-input-border: #d9e2e0;
+  --color-input-bg: #ffffff;
+  --radii-pill: 999px;
+  --radii-card: 18px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #e9f2ee;
+}
+
+a {
+  color: inherit;
+}
