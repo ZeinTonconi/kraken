@@ -231,6 +231,34 @@
   gap: 12px;
 }
 
+.offering-card .ant-card-body {
+  padding: 20px;
+}
+
+.offering-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 220px;
+}
+
+.offering-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.offering-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.offering-card__footer {
+  margin-top: auto;
+}
+
 .dashboard-descriptions .ant-descriptions-item-label {
   color: var(--color-muted);
   text-transform: uppercase;

@@ -1,6 +1,8 @@
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { Dashboard } from '../features/dashboard/Dashboard';
+import { AvailableOfferingsPage } from '../features/dashboard/pages/AvailableOfferingsPage';
+import { MyOfferingsPage } from '../features/dashboard/pages/MyOfferingsPage';
 import { AppShell } from './AppShell';
 import { RequireAuth, RequireGuest } from './guards';
 
@@ -11,6 +13,26 @@ const router = createBrowserRouter([
       <RequireAuth>
         <AppShell variant="dashboard">
           <Dashboard />
+        </AppShell>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/offerings/available',
+    element: (
+      <RequireAuth>
+        <AppShell variant="dashboard">
+          <AvailableOfferingsPage />
+        </AppShell>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/me/offerings',
+    element: (
+      <RequireAuth>
+        <AppShell variant="dashboard">
+          <MyOfferingsPage />
         </AppShell>
       </RequireAuth>
     ),

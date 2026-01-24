@@ -19,17 +19,26 @@ export type Wallet = {
 export type Term = {
   id: string;
   name: string;
+  year?: number;
+  period?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
 };
 
 export type Course = {
   id: string;
   name: string;
+  code?: string | null;
 };
 
 export type CourseOffering = {
   id: string;
   course: Course;
   term: Term;
+  teacher?: {
+    email?: string | null;
+    profile?: Profile | null;
+  };
 };
 
 export type Enrollment = {

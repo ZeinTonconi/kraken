@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Avatar, Button, Layout, Menu, Space, Typography } from "antd";
 import {
@@ -16,7 +17,7 @@ import { logout } from "../../auth/authSlice";
 import type { Profile, User } from "../../../types/academics";
 
 type DashboardLayoutProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   profile?: Profile | null;
   user?: User | null;
 };
