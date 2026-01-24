@@ -10,6 +10,8 @@ import { TeamsModule } from './teams/teams.module';
 import { CommonModule } from './common/common.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RotationProgramModule } from './rotation-program/rotation-program.module';
+import { OfferingsModule } from './offerings/offerings.module';
+import { EnrollmentsModule } from './enrollments/enrollments.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { RotationProgramModule } from './rotation-program/rotation-program.modul
     TeamsModule,
     CommonModule,
     RotationProgramModule,
+    OfferingsModule,
+    EnrollmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
