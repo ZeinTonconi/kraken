@@ -12,6 +12,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RotationProgramModule } from './rotation-program/rotation-program.module';
 import { OfferingsModule } from './offerings/offerings.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { MeModule } from './me/me.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
     RotationProgramModule,
     OfferingsModule,
     EnrollmentsModule,
+    MeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
