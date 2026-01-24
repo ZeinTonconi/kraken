@@ -13,6 +13,7 @@ import { RotationProgramModule } from './rotation-program/rotation-program.modul
 import { OfferingsModule } from './offerings/offerings.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { MeModule } from './me/me.module';
+import { PracticaRolesModule } from './practica-roles/practica-roles.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MeModule } from './me/me.module';
     OfferingsModule,
     EnrollmentsModule,
     MeModule,
+    PracticaRolesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
