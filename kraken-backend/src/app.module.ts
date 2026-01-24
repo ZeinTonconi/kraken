@@ -9,6 +9,7 @@ import { WalletModule } from './wallet/wallet.module';
 import { TeamsModule } from './teams/teams.module';
 import { CommonModule } from './common/common.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RotationProgramModule } from './rotation-program/rotation-program.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PrismaModule } from './prisma/prisma.module';
     WalletModule,
     TeamsModule,
     CommonModule,
+    RotationProgramModule,
   ],
   controllers: [AppController],
   providers: [AppService],

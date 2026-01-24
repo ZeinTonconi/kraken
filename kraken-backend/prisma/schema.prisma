@@ -40,8 +40,33 @@ enum EnrollmentTrack {
 }
 
 enum EnrollmentStatus {
-  ACTIVE
+  APPLIED
+  APPROVED
+  REJECTED
   DROPPED
+}
+
+/**
+ * NUEVOS enums para el programa de rotación
+ */
+enum ProgramOfferingType {
+  PRACTICA_INTERNA
+  INDUCCION
+}
+
+enum ProgramBlockType {
+  LEADER_BLOCK       // 3 meses (solo aplica a líderes)
+  JUNIOR_ROLE_BLOCK  // 2 meses (QA/FE/BE/DEVOPS para inducción)
+}
+
+/**
+ * Para restringir rol de líderes (solo 3)
+ */
+enum LeaderRole {
+  QA
+  FRONTEND
+  BACKEND
+  DEVOPS
 }
 
 model User {
@@ -60,6 +85,7 @@ model User {
   awardsGiven     WalletTransaction[] @relation("WalletTxnCreatedBy")
   offeringsTaught CourseOffering[]    @relation("OfferingTeacher")
   enrollments     Enrollment[]        @relation("EnrollmentStudent")
+  programLeaders ProgramLeader[]
 
   @@map("users")
 }
@@ -158,6 +184,7 @@ model CourseOffering {
 
   enrollments Enrollment[]
   teams       Team[]
+  programLinks ProgramOffering[]
 
   @@index([courseId])
   @@index([termId])
@@ -171,9 +198,14 @@ model Enrollment {
   studentId    String           @map("student_id") @db.Uuid
   track        EnrollmentTrack
   academicYear Int              @map("academic_year")
-  status       EnrollmentStatus @default(ACTIVE)
+  status       EnrollmentStatus @default(APPLIED)
   createdAt    DateTime         @default(now()) @map("created_at")
   updatedAt    DateTime         @updatedAt @map("updated_at")
+  primaryRole JobRole? @map("primary_role")  // el rol final asignado (cuenta para cupo)
+  prefRole1   JobRole? @map("pref_role_1")  // elección 1 del usuario
+  prefRole2   JobRole? @map("pref_role_2")  // elección 2 del usuario
+  prefRole3   JobRole? @map("pref_role_3")  // tercero asignado por sistema
+
 
   offering    CourseOffering   @relation(fields: [offeringId], references: [id], onDelete: Cascade)
   student     User             @relation("EnrollmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
@@ -182,23 +214,120 @@ model Enrollment {
   @@unique([offeringId, studentId])
   @@index([studentId])
   @@index([offeringId, track])
+  @@index([offeringId, track, status])
+  @@index([offeringId, track, primaryRole])
   @@map("enrollments")
+}
+
+/**
+ * Programa anual: une práctica interna e inducción para formar equipos mixtos.
+ */
+model RotationProgram {
+  id           String   @id @default(uuid()) @db.Uuid
+  academicYear Int      @map("academic_year")
+  name         String
+  startsAt     DateTime @map("starts_at")
+  endsAt       DateTime @map("ends_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  targetQaPct      Int @default(30) @map("target_qa_pct")
+  targetFrontendPct Int @default(30) @map("target_frontend_pct")
+  targetBackendPct Int @default(30) @map("target_backend_pct")
+  targetDevopsPct  Int @default(10) @map("target_devops_pct")
+
+  offerings ProgramOffering[]
+  blocks    ProgramBlock[]
+  leaders   ProgramLeader[]
+  teams     Team[]
+
+  @@unique([academicYear])
+  @@index([startsAt, endsAt])
+  @@map("rotation_programs")
+}
+
+/**
+ * Link entre programa y offerings. Aquí defines cuál offering es práctica y cuál es inducción.
+ */
+model ProgramOffering {
+  id        String              @id @default(uuid()) @db.Uuid
+  programId String              @map("program_id") @db.Uuid
+  offeringId String             @map("offering_id") @db.Uuid
+  type      ProgramOfferingType
+
+  program  RotationProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  offering CourseOffering  @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, offeringId])
+  @@index([programId, type])
+  @@map("program_offerings")
+}
+
+/**
+ * Bloques del programa:
+ * - líderes: 3 bloques de 3 meses
+ * - juniors: 4 bloques de 2 meses (con role=JobRole)
+ * - doc_month: 1 bloque de 1 mes (sin role)
+ */
+model ProgramBlock {
+  id        String           @id @default(uuid()) @db.Uuid
+  programId String           @map("program_id") @db.Uuid
+  type      ProgramBlockType
+  order     Int              // 1..N para ordenar cronológicamente
+  startsAt  DateTime         @map("starts_at")
+  endsAt    DateTime         @map("ends_at")
+
+  role      JobRole?
+
+  program RotationProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  teams Team[] @relation("TeamsByLeaderBlock")
+
+  memberships TeamMembership[]
+
+  @@unique([programId, type, order])
+  @@index([programId, startsAt, endsAt])
+  @@map("program_blocks")
+}
+
+model ProgramLeader {
+  id        String     @id @default(uuid()) @db.Uuid
+  programId String     @map("program_id") @db.Uuid
+  userId    String     @map("user_id") @db.Uuid
+  leaderRole LeaderRole @map("leader_role")
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  program RotationProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, userId])
+  @@index([programId, leaderRole, active])
+  @@map("program_leaders")
 }
 
 model Team {
   id         String   @id @default(uuid()) @db.Uuid
   name       String
+
   offeringId String   @map("offering_id") @db.Uuid
+
+  programId    String? @map("program_id") @db.Uuid
+  leaderBlockId String? @map("leader_block_id") @db.Uuid
+
   createdBy  String   @map("created_by") @db.Uuid
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   offering CourseOffering   @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  program  RotationProgram? @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  leaderBlock ProgramBlock? @relation("TeamsByLeaderBlock", fields: [leaderBlockId], references: [id], onDelete: SetNull)
+
   creator  User             @relation("TeamCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
   members  TeamMembership[]
 
   @@index([offeringId])
   @@index([createdBy])
+  @@index([programId, leaderBlockId])
   @@map("teams")
 }
 
@@ -207,6 +336,9 @@ model TeamMembership {
   teamId       String   @map("team_id") @db.Uuid
   userId       String   @map("user_id") @db.Uuid
   enrollmentId String   @map("enrollment_id") @db.Uuid
+
+  blockId      String   @map("block_id") @db.Uuid
+
   teamRole     TeamRole @default(MEMBER) @map("team_role")
   jobRole      JobRole  @map("job_role")
   joinedAt     DateTime @default(now()) @map("joined_at")
@@ -215,9 +347,14 @@ model TeamMembership {
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
-  @@unique([teamId, userId])
+  block      ProgramBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@unique([blockId, userId])
+  @@unique([teamId, blockId, userId])
+
   @@index([userId])
   @@index([teamId])
   @@index([enrollmentId])
+  @@index([blockId])
   @@map("team_memberships")
 }
