@@ -15,7 +15,7 @@ import {
 import { DashboardLayout } from "../components/DashboardLayout";
 import { getMyOfferings } from "../../../services/me.api";
 import { getProfile } from "../../../services/profile.api";
-import { tokenStorage } from "../../../services/tokenStorage";
+import { authSession } from "../../auth/auth.session";
 import { HttpError } from "../../../services/api";
 import { getPracticaRoleOptions, setPracticaRoles } from "../../../services/practicaRoles.api";
 import type {
@@ -54,7 +54,7 @@ export function MyOfferingsPage() {
 
   useEffect(() => {
     let active = true;
-    const userId = tokenStorage.getUserId();
+    const userId = authSession.getUserId();
 
     if (!userId) {
       setError("No encontramos tu userId. Inicia sesión nuevamente.");
@@ -101,7 +101,7 @@ export function MyOfferingsPage() {
   }, []);
 
   const refreshOfferings = async () => {
-    const userId = tokenStorage.getUserId();
+    const userId = authSession.getUserId();
     if (!userId) {
       return;
     }

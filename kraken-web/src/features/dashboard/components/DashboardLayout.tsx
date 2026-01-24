@@ -12,9 +12,10 @@ import {
   TeamOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch } from "../../../app/hooks";
 import { logout } from "../../auth/authSlice";
+import { authSession } from "../../auth/auth.session";
 import type { Profile, User } from "../../../types/academics";
 
 type DashboardLayoutProps = {
@@ -24,6 +25,9 @@ type DashboardLayoutProps = {
 };
 
 const resolveMenuKey = (pathname: string) => {
+  if (pathname.startsWith("/dashboard")) {
+    return "dashboard";
+  }
   if (pathname.startsWith("/teacher/applications")) {
     return "teacher-applications";
   }
@@ -53,14 +57,15 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   const dispatch = useAppDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const mockRole: "STUDENT" | "TEACHER" | "ADMIN" = "TEACHER";
   const safeProfile = profile ?? fallbackProfile;
-  const role = (safeProfile.role ?? mockRole)
+  const storedRole = authSession.getRole();
+  const role = (storedRole ?? safeProfile.role ?? "STUDENT")
     .toLowerCase()
     .replace(/_/g, " ");
-  const isAdmin = safeProfile.role === "ADMIN" || mockRole === "ADMIN";
-  const isTeacher = mockRole === "TEACHER";
+  const isAdmin = safeProfile.role === "ADMIN" || storedRole === "ADMIN";
+  const isTeacher = storedRole === "TEACHER";
   const fullName =
     safeProfile.fullName && safeProfile.fullName.trim().length > 0
       ? safeProfile.fullName
@@ -69,6 +74,7 @@ export function DashboardLayout({
     () => resolveMenuKey(location.pathname),
     [location.pathname],
   );
+  const isStudent = storedRole === "STUDENT";
 
   return (
     <Layout className="dashboard-layout">
@@ -99,14 +105,14 @@ export function DashboardLayout({
           selectedKeys={[selectedKey]}
           items={[
             {
-              key: "student",
-              label: "Estudiante",
+              key: "general",
+              label: "General",
               type: "group",
               children: [
                 {
                   key: "dashboard",
                   icon: <AppstoreOutlined />,
-                  label: <Link to="/">Dashboard</Link>,
+                  label: <Link to="/dashboard">Dashboard</Link>,
                 },
                 ...(isTeacher
                   ? [
@@ -119,32 +125,45 @@ export function DashboardLayout({
                       },
                     ]
                   : []),
-                {
-                  key: "available-courses",
-                  icon: <ShopOutlined />,
-                  label: (
-                    <Link to="/offerings/available">Cursos disponibles</Link>
-                  ),
-                },
-                {
-                  key: "my-courses",
-                  icon: <BookOutlined />,
-                  label: <Link to="/me/offerings">Mis cursos</Link>,
-                },
-                {
-                  key: "rotations",
-                  icon: <TeamOutlined />,
-                  label: "Equipos / Rotaciones",
-                  disabled: true,
-                },
-                {
-                  key: "profile",
-                  icon: <ProfileOutlined />,
-                  label: "Perfil",
-                  disabled: true,
-                },
               ],
             },
+            ...(isStudent
+              ? [
+                  {
+                    key: "student",
+                    label: "Estudiante",
+                    type: "group",
+                    children: [
+                      {
+                        key: "available-courses",
+                        icon: <ShopOutlined />,
+                        label: (
+                          <Link to="/offerings/available">
+                            Cursos disponibles
+                          </Link>
+                        ),
+                      },
+                      {
+                        key: "my-courses",
+                        icon: <BookOutlined />,
+                        label: <Link to="/me/offerings">Mis cursos</Link>,
+                      },
+                      {
+                        key: "rotations",
+                        icon: <TeamOutlined />,
+                        label: "Equipos / Rotaciones",
+                        disabled: true,
+                      },
+                      {
+                        key: "profile",
+                        icon: <ProfileOutlined />,
+                        label: "Perfil",
+                        disabled: true,
+                      },
+                    ],
+                  },
+                ]
+              : []),
             ...(isAdmin
               ? [
                   {
@@ -198,7 +217,10 @@ export function DashboardLayout({
             type="text"
             icon={<LogoutOutlined />}
             className="sider-logout"
-            onClick={() => dispatch(logout())}
+            onClick={() => {
+              dispatch(logout());
+              navigate("/login", { replace: true });
+            }}
           >
             {!collapsed ? "Log out" : null}
           </Button>

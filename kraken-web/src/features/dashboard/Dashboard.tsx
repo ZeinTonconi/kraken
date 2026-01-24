@@ -22,7 +22,7 @@ import { getMyOfferings } from "../../services/me.api";
 import { getProfile } from "../../services/profile.api";
 import { getWallet } from "../../services/wallet.api";
 import { HttpError } from "../../services/api";
-import { tokenStorage } from "../../services/tokenStorage";
+import { authSession } from "../auth/auth.session";
 import type {
   Enrollment,
   Profile,
@@ -43,7 +43,7 @@ const formatLabel = (value: string) => {
   return value.toLowerCase().replace(/_/g, " ");
 };
 
-const getUserId = () => tokenStorage.getUserId();
+const getUserId = () => authSession.getUserId();
 
 const fallbackUser = (userId: string): User => ({
   id: userId,

@@ -4,6 +4,7 @@ import { Dashboard } from '../features/dashboard/Dashboard';
 import { AvailableOfferingsPage } from '../features/dashboard/pages/AvailableOfferingsPage';
 import { MyOfferingsPage } from '../features/dashboard/pages/MyOfferingsPage';
 import { TeacherApplicationsPage } from '../features/dashboard/pages/TeacherApplicationsPage';
+import { RequireRole } from '../features/auth/RequireRole';
 import { AppShell } from './AppShell';
 import { RequireAuth, RequireGuest } from './guards';
 
@@ -19,11 +20,23 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: '/dashboard',
+    element: (
+      <RequireAuth>
+        <AppShell variant="dashboard">
+          <Dashboard />
+        </AppShell>
+      </RequireAuth>
+    ),
+  },
+  {
     path: '/offerings/available',
     element: (
       <RequireAuth>
         <AppShell variant="dashboard">
-          <AvailableOfferingsPage />
+          <RequireRole allowed={['STUDENT']}>
+            <AvailableOfferingsPage />
+          </RequireRole>
         </AppShell>
       </RequireAuth>
     ),
@@ -33,7 +46,9 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <AppShell variant="dashboard">
-          <MyOfferingsPage />
+          <RequireRole allowed={['STUDENT']}>
+            <MyOfferingsPage />
+          </RequireRole>
         </AppShell>
       </RequireAuth>
     ),
@@ -43,7 +58,9 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <AppShell variant="dashboard">
-          <TeacherApplicationsPage />
+          <RequireRole allowed={['TEACHER']}>
+            <TeacherApplicationsPage />
+          </RequireRole>
         </AppShell>
       </RequireAuth>
     ),

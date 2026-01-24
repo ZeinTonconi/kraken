@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Card, Select, Space, Table, Typography, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { DashboardLayout } from "../components/DashboardLayout";
-import { tokenStorage } from "../../../services/tokenStorage";
+import { authSession } from "../../auth/auth.session";
 import { getAvailableOfferings } from "../../../services/offerings.api";
 import { approveEnrollment, getApplications } from "../../../services/teacher.api";
 import { getProfile } from "../../../services/profile.api";
@@ -44,7 +44,7 @@ export function TeacherApplicationsPage() {
 
   useEffect(() => {
     let active = true;
-    const userId = tokenStorage.getUserId();
+    const userId = authSession.getUserId();
 
     const loadOfferings = async () => {
       setLoadingOfferings(true);

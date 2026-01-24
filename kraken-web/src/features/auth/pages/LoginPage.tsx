@@ -1,4 +1,12 @@
-import { Alert, Button, Checkbox, Divider, Form, Input, Typography } from "antd";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Divider,
+  Form,
+  Input,
+  Typography,
+} from "antd";
 import { GoogleOutlined } from "@ant-design/icons";
 import { AuthLayout } from "../components/AuthLayout";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";

@@ -18,7 +18,7 @@ import {
 } from "antd";
 import { Link } from "react-router-dom";
 import { DashboardLayout } from "../components/DashboardLayout";
-import { tokenStorage } from "../../../services/tokenStorage";
+import { authSession } from "../../auth/auth.session";
 import { getAvailableOfferings } from "../../../services/offerings.api";
 import { getMyOfferings } from "../../../services/me.api";
 import { applyToOffering } from "../../../services/enrollments.api";
@@ -88,7 +88,7 @@ const getTeacherLabel = (offering: CourseOffering) => {
   );
 };
 
-const getUserId = () => tokenStorage.getUserId();
+const getUserId = () => authSession.getUserId();
 
 const fallbackProfile: Profile = {
   fullName: "Estudiante Kraken",

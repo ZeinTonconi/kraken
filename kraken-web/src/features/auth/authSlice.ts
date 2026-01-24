@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { login as loginRequest, type LoginPayload } from '../../services/auth';
 import { getMe } from '../../services/user';
 import { tokenStorage } from '../../services/tokenStorage';
+import { authSession } from './auth.session';
 import { HttpError } from '../../services/api';
 import type { UserProfile } from '../../types/user';
 
@@ -39,7 +40,10 @@ export const login = createAsyncThunk(
     try {
       const response = await loginRequest(credentials);
       tokenStorage.setTokens(response.accessToken, response.refreshToken);
-      tokenStorage.setUserId(response.userId);
+      authSession.setUserId(response.userId);
+      if (response.role) {
+        authSession.setRole(response.role);
+      }
       const user = await getMe(response.accessToken);
       return { user, tokens: response };
     } catch (error) {
@@ -70,7 +74,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     logout(state) {
-      tokenStorage.clear();
+      authSession.clearSession();
       state.status = 'idle';
       state.error = null;
       state.user = null;
@@ -92,6 +96,9 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.accessToken = action.payload.tokens.accessToken;
       state.refreshToken = action.payload.tokens.refreshToken;
+      if (action.payload.user?.profile?.role) {
+        authSession.setRole(action.payload.user.profile.role);
+      }
     })
       .addCase(login.rejected, (state, action) => {
         state.status = 'idle';
@@ -113,15 +120,18 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.refreshToken = tokenStorage.getRefreshToken();
       if (action.payload.user?.id) {
-        tokenStorage.setUserId(action.payload.user.id);
+        authSession.setUserId(action.payload.user.id);
+      }
+      if (action.payload.user?.profile?.role) {
+        authSession.setRole(action.payload.user.profile.role);
       }
     })
       .addCase(fetchMe.rejected, (state, action) => {
-        state.status = 'idle';
-        state.user = null;
-        state.accessToken = null;
-        state.refreshToken = null;
-        tokenStorage.clear();
+      state.status = 'idle';
+      state.user = null;
+      state.accessToken = null;
+      state.refreshToken = null;
+      authSession.clearSession();
         if (action.payload !== 'Missing access token') {
           state.error =
             (typeof action.payload === 'string' && action.payload) ||
