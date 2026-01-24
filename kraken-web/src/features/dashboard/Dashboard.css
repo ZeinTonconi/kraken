@@ -156,6 +156,10 @@
   pointer-events: none;
 }
 
+.my-courses-hero {
+  padding: 12px;
+}
+
 .hero-title {
   margin: 8px 0 12px;
   letter-spacing: -0.02em;
@@ -229,6 +233,25 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.course-card .ant-card-head-title {
+  white-space: normal;
+}
+
+.summary-panel {
+  position: relative;
+}
+
+.summary-sticky {
+  position: sticky;
+  top: 24px;
+}
+
+.course-roles {
+  background: rgba(47, 127, 214, 0.06);
+  border-radius: 16px;
+  padding: 12px;
 }
 
 .offering-card .ant-card-body {

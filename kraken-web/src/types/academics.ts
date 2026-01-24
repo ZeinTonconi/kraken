@@ -45,6 +45,7 @@ export type Enrollment = {
   id: string;
   status: string;
   track: string;
+  createdAt?: string | null;
   primaryRole?: string | null;
   prefRole1?: string | null;
   prefRole2?: string | null;
@@ -55,4 +56,25 @@ export type Enrollment = {
 export type ProfileResponse = {
   user: User;
   profile: Profile;
+};
+
+export type JobRole = string;
+
+export type PracticaRoleOptions = {
+  mandatoryRole: JobRole;
+  selectableRoles: JobRole[];
+  allShownRoles?: JobRole[];
+  targets?: Record<string, number>;
+  counts?: Record<string, number>;
+};
+
+export type EnrollmentApplication = {
+  id: string;
+  status: string;
+  track: string;
+  createdAt?: string | null;
+  student: {
+    email?: string | null;
+    profile?: Profile | null;
+  };
 };

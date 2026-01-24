@@ -4,6 +4,7 @@ import { Avatar, Button, Layout, Menu, Space, Typography } from "antd";
 import {
   AppstoreOutlined,
   BookOutlined,
+  FileTextOutlined,
   LogoutOutlined,
   ProfileOutlined,
   RocketOutlined,
@@ -23,6 +24,9 @@ type DashboardLayoutProps = {
 };
 
 const resolveMenuKey = (pathname: string) => {
+  if (pathname.startsWith("/teacher/applications")) {
+    return "teacher-applications";
+  }
   if (pathname.startsWith("/offerings/available")) {
     return "available-courses";
   }
@@ -50,10 +54,13 @@ export function DashboardLayout({
   const dispatch = useAppDispatch();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const mockRole: "STUDENT" | "TEACHER" | "ADMIN" = "TEACHER";
   const safeProfile = profile ?? fallbackProfile;
-  const role = (safeProfile.role ?? "STUDENT").toLowerCase().replace(/_/g, " ");
-  const isAdmin =
-    safeProfile.role === "ADMIN" || safeProfile.role === "TEACHER";
+  const role = (safeProfile.role ?? mockRole)
+    .toLowerCase()
+    .replace(/_/g, " ");
+  const isAdmin = safeProfile.role === "ADMIN" || mockRole === "ADMIN";
+  const isTeacher = mockRole === "TEACHER";
   const fullName =
     safeProfile.fullName && safeProfile.fullName.trim().length > 0
       ? safeProfile.fullName
@@ -101,6 +108,17 @@ export function DashboardLayout({
                   icon: <AppstoreOutlined />,
                   label: <Link to="/">Dashboard</Link>,
                 },
+                ...(isTeacher
+                  ? [
+                      {
+                        key: "teacher-applications",
+                        icon: <FileTextOutlined />,
+                        label: (
+                          <Link to="/teacher/applications">Applications</Link>
+                        ),
+                      },
+                    ]
+                  : []),
                 {
                   key: "available-courses",
                   icon: <ShopOutlined />,

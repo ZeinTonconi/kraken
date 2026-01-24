@@ -3,6 +3,7 @@ import { LoginPage } from '../features/auth/pages/LoginPage';
 import { Dashboard } from '../features/dashboard/Dashboard';
 import { AvailableOfferingsPage } from '../features/dashboard/pages/AvailableOfferingsPage';
 import { MyOfferingsPage } from '../features/dashboard/pages/MyOfferingsPage';
+import { TeacherApplicationsPage } from '../features/dashboard/pages/TeacherApplicationsPage';
 import { AppShell } from './AppShell';
 import { RequireAuth, RequireGuest } from './guards';
 
@@ -33,6 +34,16 @@ const router = createBrowserRouter([
       <RequireAuth>
         <AppShell variant="dashboard">
           <MyOfferingsPage />
+        </AppShell>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/teacher/applications',
+    element: (
+      <RequireAuth>
+        <AppShell variant="dashboard">
+          <TeacherApplicationsPage />
         </AppShell>
       </RequireAuth>
     ),
