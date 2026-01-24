@@ -1,15 +1,17 @@
+@import "tailwindcss";
+
 :root {
   font-family: 'Poppins', 'Segoe UI', sans-serif;
-  color: #1f2d3d;
-  background-color: #e9f2ee;
+  color: #142333;
+  background-color: #eef6f8;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --color-primary: #0fa17b;
-  --color-primary-dark: #0d8767;
-  --color-surface: #f7f9f7;
-  --color-text: #1f2d3d;
-  --color-muted: #6b7a89;
-  --color-input-border: #d9e2e0;
+  --color-primary: #2f7fd6;
+  --color-primary-dark: #1c5aa5;
+  --color-surface: #f5f9fb;
+  --color-text: #142333;
+  --color-muted: #5b6b7b;
+  --color-input-border: #cfe0ea;
   --color-input-bg: #ffffff;
   --radii-pill: 999px;
   --radii-card: 18px;
@@ -23,7 +25,7 @@
 
 body {
   margin: 0;
-  background: #e9f2ee;
+  background: #eef6f8;
 }
 
 a {

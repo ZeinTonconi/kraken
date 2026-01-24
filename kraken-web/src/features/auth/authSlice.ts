@@ -39,6 +39,7 @@ export const login = createAsyncThunk(
     try {
       const response = await loginRequest(credentials);
       tokenStorage.setTokens(response.accessToken, response.refreshToken);
+      tokenStorage.setUserId(response.userId);
       const user = await getMe(response.accessToken);
       return { user, tokens: response };
     } catch (error) {
@@ -86,12 +87,12 @@ const authSlice = createSlice({
         state.status = 'loading';
         state.error = null;
       })
-      .addCase(login.fulfilled, (state, action) => {
-        state.status = 'authenticated';
-        state.user = action.payload.user;
-        state.accessToken = action.payload.tokens.accessToken;
-        state.refreshToken = action.payload.tokens.refreshToken;
-      })
+    .addCase(login.fulfilled, (state, action) => {
+      state.status = 'authenticated';
+      state.user = action.payload.user;
+      state.accessToken = action.payload.tokens.accessToken;
+      state.refreshToken = action.payload.tokens.refreshToken;
+    })
       .addCase(login.rejected, (state, action) => {
         state.status = 'idle';
         state.user = null;
@@ -106,12 +107,15 @@ const authSlice = createSlice({
         state.status = 'loading';
         state.error = null;
       })
-      .addCase(fetchMe.fulfilled, (state, action) => {
-        state.status = 'authenticated';
-        state.user = action.payload.user;
-        state.accessToken = action.payload.accessToken;
-        state.refreshToken = tokenStorage.getRefreshToken();
-      })
+    .addCase(fetchMe.fulfilled, (state, action) => {
+      state.status = 'authenticated';
+      state.user = action.payload.user;
+      state.accessToken = action.payload.accessToken;
+      state.refreshToken = tokenStorage.getRefreshToken();
+      if (action.payload.user?.id) {
+        tokenStorage.setUserId(action.payload.user.id);
+      }
+    })
       .addCase(fetchMe.rejected, (state, action) => {
         state.status = 'idle';
         state.user = null;

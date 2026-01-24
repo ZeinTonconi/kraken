@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const DEFAULT_BASE_URL = 'http://localhost:3000';
 
 type ApiRequestOptions = {
@@ -23,7 +25,7 @@ const rawBaseUrl =
 const baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 
 const buildHeaders = (token?: string, hasBody?: boolean) => {
-  const headers: HeadersInit = {};
+  const headers: Record<string, string> = {};
   if (hasBody) {
     headers['Content-Type'] = 'application/json';
   }
@@ -31,14 +33,6 @@ const buildHeaders = (token?: string, hasBody?: boolean) => {
     headers.Authorization = `Bearer ${token}`;
   }
   return headers;
-};
-
-const parseResponseBody = async (response: Response) => {
-  const contentType = response.headers.get('content-type') ?? '';
-  if (contentType.includes('application/json')) {
-    return response.json();
-  }
-  return response.text();
 };
 
 const resolveErrorMessage = (payload: unknown, fallback: string) => {
@@ -57,22 +51,29 @@ const resolveErrorMessage = (payload: unknown, fallback: string) => {
   return fallback;
 };
 
+const client = axios.create({
+  baseURL: baseUrl,
+});
+
 export const apiRequest = async <T>(
   path: string,
   { method = 'GET', body, token }: ApiRequestOptions = {},
 ): Promise<T> => {
-  const response = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers: buildHeaders(token, body !== undefined),
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-
-  const payload = await parseResponseBody(response);
-
-  if (!response.ok) {
-    const message = resolveErrorMessage(payload, 'Request failed');
-    throw new HttpError(message, response.status, payload);
+  try {
+    const response = await client.request<T>({
+      url: path,
+      method,
+      data: body,
+      headers: buildHeaders(token, body !== undefined),
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status ?? 0;
+      const payload = error.response?.data;
+      const message = resolveErrorMessage(payload, error.message || 'Request failed');
+      throw new HttpError(message, status, payload);
+    }
+    throw error;
   }
-
-  return payload as T;
 };
