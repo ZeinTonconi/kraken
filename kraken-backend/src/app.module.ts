@@ -15,6 +15,7 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { MeModule } from './me/me.module';
 import { PracticaRolesModule } from './practica-roles/practica-roles.module';
 import { CoursesModule } from './courses/courses.module';
+import { TermsModule } from './terms/terms.module';
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { CoursesModule } from './courses/courses.module';
     EnrollmentsModule,
     MeModule,
     PracticaRolesModule,
-    CoursesModule
+    CoursesModule,
+    TermsModule
   ],
   controllers: [AppController],
   providers: [AppService],

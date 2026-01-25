@@ -1,8 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCourses } from './dto/create-courses.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateCourses } from './dto/update-courses.dto';
-import { Prisma } from '@prisma/client';
+import { GlobalRole, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CoursesService {
@@ -36,5 +40,38 @@ export class CoursesService {
       }
       throw e;
     }
+  }
+
+  async getMyCourses(teacherId: string, termId: string) {
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+    });
+
+    if (!term) throw new NotFoundException('Term not found');
+
+    return await this.prisma.courseOffering.findMany({
+      where: {
+        termId,
+        teacherId,
+      },
+      select: {
+        id: true,
+        course: {
+          select: {
+            code: true,
+            name: true,
+          },
+        },
+        term: {
+          select: {
+            name: true,
+            year: true,
+            period: true,
+            startsAt: true,
+            endsAt: true,
+          },
+        },
+      },
+    });
   }
 }
