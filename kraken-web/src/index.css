@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-family: "Poppins", "Segoe UI", sans-serif;
   color: #142333;
   background-color: #eef6f8;
   text-rendering: optimizeLegibility;
@@ -30,4 +30,111 @@ body {
 
 a {
   color: inherit;
+}
+
+/* Wrapper general de la tabla */
+.ka-table .ant-table {
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid rgba(220, 230, 240, 0.9); /* borderMuted */
+}
+
+/* Header */
+.ka-table .ant-table-thead > tr > th {
+  background: #eef4f8; /* surfaceMuted */
+  color: #1f2d3d; /* textPrimary */
+  font-weight: 600;
+  border-bottom: 1px solid rgba(220, 230, 240, 0.9);
+}
+
+/* Celdas */
+.ka-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(233, 240, 246, 1);
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+/* Hover suave */
+.ka-table .ant-table-tbody > tr:hover > td {
+  background: #f0f6ff; /* hover azulado suave */
+}
+
+/* Resaltar pendientes (opcional) */
+.ka-row--pending > td {
+  background: rgba(242, 201, 76, 0.08); /* warning soft */
+}
+.ka-row--pending:hover > td {
+  background: rgba(242, 201, 76, 0.12);
+}
+
+/* Acciones: icon buttons */
+.ka-action.ant-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 230, 240, 0.9);
+  background: #fff;
+}
+
+/* Hover de acciones */
+.ka-action.ant-btn:hover:not(:disabled) {
+  background: #f5faff; /* background */
+}
+
+/* Aprobar / Rechazar con tint suave */
+.ka-action--approve.ant-btn:hover:not(:disabled) {
+  border-color: rgba(39, 174, 96, 0.45);
+  background: rgba(39, 174, 96, 0.08);
+}
+.ka-action--reject.ant-btn:hover:not(:disabled) {
+  border-color: rgba(235, 87, 87, 0.45);
+  background: rgba(235, 87, 87, 0.08);
+}
+
+/* Segment + Search: que se vean integrados */
+.ka-toolbar .ant-segmented {
+  border-radius: 12px;
+}
+.ka-toolbar .ant-input-affix-wrapper {
+  border-radius: 12px;
+}
+
+/* Paginación más limpia (opcional) */
+.ka-table .ant-pagination {
+  margin: 14px 0 0;
+}
+
+.ka-hero-card.ant-card {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(220, 230, 240, 0.9);
+  box-shadow: 0 10px 30px rgba(47, 128, 237, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.ka-hero-card .ant-card-body {
+  padding: 18px 20px;
+}
+
+.ka-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(245, 250, 255, 1);
+  border: 1px solid rgba(220, 230, 240, 0.9);
+  color: #1f2d3d;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.ka-stat-chip--warning {
+  background: rgba(242, 201, 76, 0.16);
+  border-color: rgba(242, 201, 76, 0.3);
+  color: #8a6d1d;
 }

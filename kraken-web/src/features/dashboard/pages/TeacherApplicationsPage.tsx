@@ -1,247 +1,230 @@
 import "../Dashboard.css";
-import { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Card, Select, Space, Table, Typography, message } from "antd";
-import type { ColumnsType } from "antd/es/table";
+import { useMemo, useState } from "react";
+import {
+  Alert,
+  Breadcrumb,
+  Card,
+  Space,
+  Typography,
+  message,
+  Modal,
+} from "antd";
 import { DashboardLayout } from "../components/DashboardLayout";
-import { authSession } from "../../auth/auth.session";
-import { getAvailableOfferings } from "../../../services/offerings.api";
-import { approveEnrollment, getApplications } from "../../../services/teacher.api";
-import { getProfile } from "../../../services/profile.api";
-import { HttpError } from "../../../services/api";
+import { OfferingsGrid } from "../applications/OfferingsGrid";
+import { OfferingApplicationsTable } from "../applications/OfferingApplicationsTable";
+import { useOfferings } from "../applications/useOfferings";
+import { useApplications } from "../applications/useApplications";
 import type {
-  CourseOffering,
-  EnrollmentApplication,
-  Profile,
-  ProfileResponse,
-  User,
-} from "../../../types/academics";
-
-const fallbackProfile: Profile = {
-  fullName: "Docente Kraken",
-  role: "TEACHER",
-  handle: null,
-  avatarUrl: null,
-};
-
-const formatDate = (value?: string | null) => {
-  if (!value) {
-    return "N/A";
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString("es-BO");
-};
+  ApplicationStatus,
+  OfferingApplication,
+} from "../applications/types";
+import { approveEnrollment } from "../../../services/teacher.api";
 
 export function TeacherApplicationsPage() {
-  const [offerings, setOfferings] = useState<CourseOffering[]>([]);
-  const [applications, setApplications] = useState<EnrollmentApplication[]>([]);
-  const [selectedOfferingId, setSelectedOfferingId] = useState<string | null>(null);
-  const [loadingOfferings, setLoadingOfferings] = useState(true);
-  const [loadingApplications, setLoadingApplications] = useState(false);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<Profile>(fallbackProfile);
-  const [userInfo, setUserInfo] = useState<User | null>(null);
+  const { offerings, loading, error } = useOfferings();
+  const [selectedOfferingId, setSelectedOfferingId] = useState<string | null>(
+    null,
+  );
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "ALL">(
+    "ALL",
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [modalState, setModalState] = useState<{
+    action: "approve" | "reject" | null;
+    record: OfferingApplication | null;
+    loading: boolean;
+  }>({ action: null, record: null, loading: false });
 
-  useEffect(() => {
-    let active = true;
-    const userId = authSession.getUserId();
+  const applicationsQuery = useMemo(
+    () => ({
+      status: statusFilter,
+      q: searchQuery,
+      page,
+      pageSize,
+    }),
+    [statusFilter, searchQuery, page, pageSize],
+  );
 
-    const loadOfferings = async () => {
-      setLoadingOfferings(true);
-      setError(null);
-      try {
-        const available = await getAvailableOfferings();
-        if (!active) {
-          return;
-        }
-        setOfferings(available);
-      } catch (err) {
-        if (err instanceof HttpError) {
-          setError(err.message);
-        } else {
-          setError("No pudimos cargar los offerings.");
-        }
-      } finally {
-        if (active) {
-          setLoadingOfferings(false);
-        }
-      }
-    };
+  const {
+    data: applicationsData,
+    loading: loadingApplications,
+    error: applicationsError,
+    reload,
+  } = useApplications(selectedOfferingId, applicationsQuery);
 
-    const loadProfile = async () => {
-      if (!userId) {
-        return;
-      }
-      try {
-        const data = (await getProfile(userId)) as ProfileResponse;
-        if (!active) {
-          return;
-        }
-        setProfile(data.profile ?? fallbackProfile);
-        setUserInfo(data.user ?? null);
-      } catch (err) {
-        if (err instanceof HttpError && err.status === 404) {
-          setProfile(fallbackProfile);
-        }
-      }
-    };
+  const selectedOffering = useMemo(
+    () =>
+      offerings.find((offering) => offering.id === selectedOfferingId) ?? null,
+    [offerings, selectedOfferingId],
+  );
 
-    loadOfferings();
-    loadProfile();
+  const handleOpenOffering = (offeringId: string) => {
+    setSelectedOfferingId(offeringId);
+    setStatusFilter("ALL");
+    setSearchQuery("");
+    setPage(1);
+  };
 
-    return () => {
-      active = false;
-    };
-  }, []);
+  const handleApprove = (record: OfferingApplication) => {
+    setModalState({ action: "approve", record, loading: false });
+  };
 
-  useEffect(() => {
-    let active = true;
-    if (!selectedOfferingId) {
-      setApplications([]);
-      return () => {
-        active = false;
-      };
-    }
+  const handleReject = () => {
+    message.error("Rechazo no disponible en el backend.");
+  };
 
-    const loadApplications = async () => {
-      setLoadingApplications(true);
-      setError(null);
-      try {
-        const data = await getApplications(selectedOfferingId);
-        if (!active) {
-          return;
-        }
-        setApplications(data);
-      } catch (err) {
-        if (err instanceof HttpError) {
-          setError(err.message);
-        } else {
-          setError("No pudimos cargar las postulaciones.");
-        }
-      } finally {
-        if (active) {
-          setLoadingApplications(false);
-        }
-      }
-    };
-
-    loadApplications();
-
-    return () => {
-      active = false;
-    };
-  }, [selectedOfferingId]);
-
-  const handleApprove = async (enrollmentId: string) => {
-    if (!selectedOfferingId) {
+  const handleConfirmAction = async () => {
+    if (!modalState.record || !modalState.action) {
       return;
     }
-    setApprovingId(enrollmentId);
+    setModalState((prev) => ({ ...prev, loading: true }));
     try {
-      await approveEnrollment(enrollmentId);
-      message.success("Estudiante aprobado");
-      const updated = await getApplications(selectedOfferingId);
-      setApplications(updated);
-    } catch (err) {
-      if (err instanceof HttpError) {
-        message.error(err.message);
+      if (modalState.action === "approve") {
+        await approveEnrollment(modalState.record.id);
+        message.success("Estudiante aprobado");
       } else {
-        message.error("No pudimos aprobar la postulación.");
+        message.error("Rechazo no disponible en el backend.");
+        setModalState((prev) => ({ ...prev, loading: false }));
+        return;
       }
-    } finally {
-      setApprovingId(null);
+      setModalState({ action: null, record: null, loading: false });
+      reload();
+    } catch {
+      message.error("No pudimos actualizar la postulación.");
+      setModalState((prev) => ({ ...prev, loading: false }));
     }
   };
 
-  const offeringOptions = useMemo(
-    () =>
-      offerings.map((offering) => ({
-        value: offering.id,
-        label: `${offering.course?.name ?? "Curso"} - ${offering.term?.year ?? "N/A"} ${
-          offering.term?.period ?? ""
-        }`.trim(),
-      })),
-    [offerings],
-  );
-
-  const columns: ColumnsType<EnrollmentApplication> = [
-    {
-      title: "Estudiante",
-      dataIndex: ["student", "profile", "fullName"],
-      render: (_, record) =>
-        record.student.profile?.fullName ?? record.student.email ?? "Sin nombre",
-    },
-    {
-      title: "Email",
-      dataIndex: ["student", "email"],
-      render: (_, record) => record.student.email ?? "Sin email",
-    },
-    {
-      title: "Track",
-      dataIndex: "track",
-      render: (value: string) => value?.replace(/_/g, " ").toLowerCase(),
-    },
-    {
-      title: "Fecha",
-      dataIndex: "createdAt",
-      render: (value?: string | null) => formatDate(value),
-    },
-    {
-      title: "Accion",
-      key: "action",
-      render: (_, record) => (
-        <Button
-          type="primary"
-          loading={approvingId === record.id}
-          onClick={() => handleApprove(record.id)}
-        >
-          Aprobar
-        </Button>
-      ),
-    },
-  ];
+  const handleCloseModal = () => {
+    setModalState({ action: null, record: null, loading: false });
+  };
 
   return (
-    <DashboardLayout profile={profile} user={userInfo}>
+    <DashboardLayout>
       <div className="dashboard">
-        <Space direction="vertical" size={8}>
-          <Typography.Title level={3} className="!m-0">
-            Applications
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            Postulaciones pendientes de aprobación
-          </Typography.Text>
-        </Space>
+        {selectedOffering ? (
+          <Space direction="vertical" size={16} className="w-full">
+            <Breadcrumb
+              items={[
+                {
+                  title: (
+                    <Typography.Link
+                      onClick={() => setSelectedOfferingId(null)}
+                    >
+                      Applications
+                    </Typography.Link>
+                  ),
+                },
+                { title: selectedOffering.name },
+              ]}
+            />
+            <Card className="ka-hero-card" bordered={false}>
+              <Space direction="vertical" size={6}>
+                <Typography.Title level={3} className="!m-0">
+                  Postulaciones
+                </Typography.Title>
 
-        {error ? (
-          <Alert type="warning" message="Datos incompletos" description={error} showIcon />
-        ) : null}
+                <Typography.Text type="secondary">
+                  {selectedOffering.name}
+                </Typography.Text>
 
-        <Card className="dashboard-card">
-          <Space direction="vertical" size={12} className="w-full">
-            <Typography.Text>Selecciona un offering</Typography.Text>
-            <Select
-              className="w-full"
-              placeholder="Selecciona un offering"
-              options={offeringOptions}
-              value={selectedOfferingId ?? undefined}
-              onChange={(value) => setSelectedOfferingId(value)}
-              loading={loadingOfferings}
-              allowClear
+                <Space size={8} wrap>
+                  <span className="ka-stat-chip ka-stat-chip--warning">
+                    Pendientes: <strong>{selectedOffering.pending}</strong>
+                  </span>
+
+                  <span className="ka-stat-chip">
+                    Total: <strong>{selectedOffering.total}</strong>
+                  </span>
+                </Space>
+              </Space>
+            </Card>
+
+            {applicationsError ? (
+              <Alert
+                type="warning"
+                message="Datos incompletos"
+                description={applicationsError}
+                showIcon
+              />
+            ) : null}
+
+            <Card className="dashboard-card">
+              <OfferingApplicationsTable
+                loading={loadingApplications}
+                data={applicationsData.items}
+                total={applicationsData.total}
+                page={page}
+                pageSize={pageSize}
+                status={statusFilter}
+                query={searchQuery}
+                onStatusChange={(value) => {
+                  setStatusFilter(value);
+                  setPage(1);
+                }}
+                onQueryChange={(value) => {
+                  setSearchQuery(value);
+                  setPage(1);
+                }}
+                onPageChange={(nextPage, nextPageSize) => {
+                  setPage(nextPage);
+                  setPageSize(nextPageSize);
+                }}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                disableReject
+                onView={(record) =>
+                  message.info(`Detalle de ${record.student.fullName}`)
+                }
+              />
+            </Card>
+          </Space>
+        ) : (
+          <Space direction="vertical" size={8} className="w-full">
+            <Typography.Title level={3} className="!m-0">
+              Applications
+            </Typography.Title>
+            <Typography.Text type="secondary">
+              Postulaciones pendientes de aprobación
+            </Typography.Text>
+            {error ? (
+              <Alert
+                type="warning"
+                message="Datos incompletos"
+                description={error}
+                showIcon
+              />
+            ) : null}
+            <OfferingsGrid
+              offerings={offerings}
+              loading={loading}
+              onOpen={handleOpenOffering}
             />
           </Space>
-        </Card>
-
-        <Card className="dashboard-card">
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={applications}
-            loading={loadingApplications}
-            pagination={{ pageSize: 8 }}
-          />
-        </Card>
+        )}
       </div>
+
+      <Modal
+        open={Boolean(modalState.action)}
+        title={
+          modalState.action === "approve"
+            ? "Aprobar postulación"
+            : "Rechazar postulación"
+        }
+        onCancel={handleCloseModal}
+        onOk={handleConfirmAction}
+        okText="Confirmar"
+        cancelText="Cancelar"
+        confirmLoading={modalState.loading}
+      >
+        <Typography.Text>
+          {modalState.action === "approve"
+            ? "¿Seguro que deseas aprobar a este estudiante?"
+            : "¿Seguro que deseas rechazar esta postulación?"}
+        </Typography.Text>
+      </Modal>
     </DashboardLayout>
   );
 }

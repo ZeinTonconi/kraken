@@ -56,7 +56,15 @@ enum ProgramOfferingType {
 
 enum ProgramBlockType {
   LEADER_BLOCK       // 3 meses (solo aplica a líderes)
-  JUNIOR_ROLE_BLOCK  // 2 meses (QA/FE/BE/DEVOPS para inducción)
+  JUNIOR_ROLE_BLOCK  // legacy: 2 meses (QA/FE/BE/DEVOPS para inducción)
+  JUNIOR_BLOCK       // 2 meses (global, sin role)
+  DOCS_BLOCK         // 1 mes (documentación)
+}
+
+enum ProgramStatus {
+  DRAFT
+  ACTIVE
+  FINISHED
 }
 
 /**
@@ -228,6 +236,8 @@ model RotationProgram {
   name         String
   startsAt     DateTime @map("starts_at")
   endsAt       DateTime @map("ends_at")
+  status       ProgramStatus @default(DRAFT)
+  startedAt    DateTime? @map("started_at")
   createdAt    DateTime @default(now()) @map("created_at")
   targetQaPct      Int @default(30) @map("target_qa_pct")
   targetFrontendPct Int @default(30) @map("target_frontend_pct")
@@ -271,9 +281,11 @@ model ProgramBlock {
   id        String           @id @default(uuid()) @db.Uuid
   programId String           @map("program_id") @db.Uuid
   type      ProgramBlockType
-  order     Int              // 1..N para ordenar cronológicamente
+  order     Int              // 1..N por tipo
+  label     String?
   startsAt  DateTime         @map("starts_at")
   endsAt    DateTime         @map("ends_at")
+  createdAt DateTime         @default(now()) @map("created_at")
 
   role      JobRole?
 

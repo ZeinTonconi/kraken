@@ -11,11 +11,6 @@ export class RotationProgramController {
     return this.rotationProgramService.createProgram(dto);
   }
 
-  @Post(':id/blocks/init')
-  initBlocks(@Param('id') id: string) {
-    return this.rotationProgramService.initBlocks(id);
-  }
-
   @Get(':id/blocks')
   listBlocks(@Param('id') id: string) {
     return this.rotationProgramService.listBlocks(id);
