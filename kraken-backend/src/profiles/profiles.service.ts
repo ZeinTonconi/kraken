@@ -1,11 +1,13 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateProfile } from './dto/update-profile.dto';
-import { UserStatus } from '@prisma/client';
+import { Prisma, UserStatus } from '@prisma/client';
+import { ChangeStatus } from './dto/change-stauts.dto';
 
 @Injectable()
 export class ProfilesService {
@@ -38,18 +40,17 @@ export class ProfilesService {
     return user;
   }
 
-  async changeStatusStudnet(userId: string) {
+  async changeStatusStudent(userId: string, status: UserStatus) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) throw new NotFoundException('Invalid user');
+    if(user.status === status)
+      throw new BadRequestException(`The user has already the ${status} status`)
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        status:
-          user?.status === UserStatus.ACTIVE
-            ? UserStatus.DISABLED
-            : UserStatus.ACTIVE,
+        status
       },
       select: {
         email: true,
@@ -66,21 +67,33 @@ export class ProfilesService {
   }
 
   async updateMyProfile(userId: string, data: UpdateProfile) {
-    const updated = await this.prisma.profile.update({
-      where: { userId },
-      data: {
-        fullName: data.fullName,
-        handle: data.handle,
-        avatarUrl: data.avatarUrl,
-      },
-      select: {
-        fullName: true,
-        handle: true,
-        avatarUrl: true,
-        role: true,
-      },
-    });
-    if (!updated) throw new NotFoundException('Invalid user');
-    return updated;
+    try {
+      return await this.prisma.profile.update({
+        where: { userId },
+        data: {
+          ...(data.fullName !== undefined ? { fullName: data.fullName } : {}),
+          ...(data.handle !== undefined ? { handle: data.handle } : {}),
+          ...(data.avatarUrl !== undefined
+            ? { avatarUrl: data.avatarUrl }
+            : {}),
+        },
+        select: { fullName: true, handle: true, avatarUrl: true, role: true },
+      });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
+        throw new NotFoundException('Invalid user');
+      }
+
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new BadRequestException('Handle already taken');
+      }
+      throw e;
+    }
   }
 }

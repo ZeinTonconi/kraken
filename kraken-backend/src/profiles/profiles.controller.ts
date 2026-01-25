@@ -2,8 +2,10 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
+  Patch,
   Put,
   Request,
   UnauthorizedException,
@@ -15,6 +17,8 @@ import { JwtPayload } from 'src/auth/jwt.strategy';
 import { Roles } from 'src/common/roles.decorator';
 import { GlobalRole } from '@prisma/client';
 import { UpdateProfile } from './dto/update-profile.dto';
+import { RolesGuard } from 'src/common/roles.guard';
+import { ChangeStatus } from './dto/change-stauts.dto';
 
 @Controller('profiles')
 export class ProfilesController {
@@ -35,19 +39,19 @@ export class ProfilesController {
     return this.profiles.updateMyProfile(req.user.sub, updateProfile);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GlobalRole.ADMIN)
-  @Put("change-status/:id")
-  changeStatusStudent(@Param('id') userId: string) {
-    return this.profiles.changeStatusStudnet(userId)
+  @Patch("change-status/:id")
+  changeStatusStudent(@Param('id') userId: string, @Body() changeStatus: ChangeStatus) {
+    return this.profiles.changeStatusStudent(userId, changeStatus.status)
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GlobalRole.ADMIN, GlobalRole.TEACHER)
   @Get(':id')
   async getStudentProfile(@Param('id') userId: string) {
     const user = await this.profiles.getUserProfileById(userId);
     if (user?.profile?.role === GlobalRole.STUDENT) return user;
-    throw new UnauthorizedException('You are not allowed to see that profile');
+    throw new ForbiddenException('You are not allowed to see that profile');
   }
 }
