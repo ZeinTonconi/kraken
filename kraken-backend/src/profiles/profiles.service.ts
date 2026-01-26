@@ -40,7 +40,7 @@ export class ProfilesService {
     return user;
   }
 
-  async changeStatusStudent(userId: string, status: UserStatus) {
+  async changeStatus(userId: string, status: UserStatus) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) throw new NotFoundException('Invalid user');
