@@ -30,7 +30,7 @@ export class EnrollmentsController {
 
   // admin: ver postulaciones
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(GlobalRole.ADMIN)
+  @Roles(GlobalRole.ADMIN, GlobalRole.TEACHER)
   @Get('offerings/:offeringId/applications')
   listApplications(
     @Param('offeringId') offeringId: string,
@@ -41,14 +41,14 @@ export class EnrollmentsController {
 
   // admin: aprobar
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(GlobalRole.ADMIN)
+  @Roles(GlobalRole.ADMIN, GlobalRole.TEACHER)
   @Post('enrollments/:enrollmentId/approve')
   approve(@Param('enrollmentId') enrollmentId: string) {
     return this.enrollments.approve(enrollmentId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(GlobalRole.ADMIN)
+  @Roles(GlobalRole.ADMIN, GlobalRole.TEACHER)
   @Post('enrollments/:enrollmentId/deny')
   deny(@Param('enrollmentId') enrollmentId: string) {
     return this.enrollments.reject(enrollmentId);
