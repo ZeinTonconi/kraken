@@ -42,18 +42,21 @@ export class CoursesService {
     }
   }
 
-  async getMyCourses(teacherId: string, termId: string) {
-    const term = await this.prisma.term.findUnique({
-      where: { id: termId },
-    });
+  async getMyCourses(teacherId: string, termId?: string) {
+    const where: any = { teacherId };
 
-    if (!term) throw new NotFoundException('Term not found');
+    if (termId) {
+      const term = await this.prisma.term.findUnique({
+        where: { id: termId }
+      });
 
-    return await this.prisma.courseOffering.findMany({
-      where: {
-        termId,
-        teacherId,
-      },
+      if (!term) throw new NotFoundException('Term not found');
+
+      where.termId = term.id;
+    }
+
+    return this.prisma.courseOffering.findMany({
+      where,
       select: {
         id: true,
         course: {
@@ -72,6 +75,7 @@ export class CoursesService {
           },
         },
       },
+      orderBy: { term: { startsAt: 'desc' } },
     });
   }
 }

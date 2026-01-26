@@ -15,7 +15,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ProfilesService } from './profiles.service';
 import { JwtPayload } from 'src/auth/jwt.strategy';
 import { Roles } from 'src/common/roles.decorator';
-import { GlobalRole } from '@prisma/client';
+import { GlobalRole, UserStatus } from '@prisma/client';
 import { UpdateProfile } from './dto/update-profile.dto';
 import { RolesGuard } from 'src/common/roles.guard';
 import { ChangeStatus } from './dto/change-stauts.dto';
@@ -41,9 +41,16 @@ export class ProfilesController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GlobalRole.ADMIN)
-  @Patch("change-status/:id")
-  changeStatusStudent(@Param('id') userId: string, @Body() changeStatus: ChangeStatus) {
-    return this.profiles.changeStatusStudent(userId, changeStatus.status)
+  @Put(":id/activate")
+  activeProfile(@Param('id') userId: string) {
+    return this.profiles.changeStatus(userId, UserStatus.ACTIVE)
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(GlobalRole.ADMIN)
+  @Put(":id/disable")
+  disableProfile(@Param('id') userId: string) {
+    return this.profiles.changeStatus(userId, UserStatus.DISABLED)
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

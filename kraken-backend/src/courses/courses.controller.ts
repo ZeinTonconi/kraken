@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -37,11 +38,11 @@ export class CoursesController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GlobalRole.TEACHER)
-  @Get('my-courses/:term')
+  @Get('my-courses')
   getMyCourses(
-    @Param('term') term: string,
     @Request() req: { user: JwtPayload },
+    @Query('term') termId?: string,
   ) {
-    return this.coursesService.getMyCourses(req.user.sub, term);
+    return this.coursesService.getMyCourses(req.user.sub, termId);
   }
 }
