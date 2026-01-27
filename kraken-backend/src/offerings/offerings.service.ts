@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Global, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOfferingDto } from './dto/create-offering.dto';
+import { GlobalRole } from '@prisma/client';
 
 @Injectable()
 export class OfferingsService {
@@ -21,12 +22,22 @@ export class OfferingsService {
     const [course, term, teacher] = await Promise.all([
       this.prisma.course.findUnique({ where: { id: dto.courseId } }),
       this.prisma.term.findUnique({ where: { id: dto.termId } }),
-      this.prisma.user.findUnique({ where: { id: dto.teacherId } }),
+      this.prisma.user.findUnique({
+        where: { id: dto.teacherId },
+        select: {
+          profile: {
+            select: {
+              role: true,
+            },
+          },
+        },
+      }),
     ]);
 
     if (!course) throw new BadRequestException('Course not found');
     if (!term) throw new BadRequestException('Term not found');
-    if (!teacher) throw new BadRequestException('Teacher not found');
+    if (!teacher || (teacher && teacher.profile?.role !== GlobalRole.TEACHER))
+      throw new BadRequestException('Teacher not found');
 
     return this.prisma.courseOffering.create({
       data: {
