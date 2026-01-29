@@ -674,4 +674,88 @@ export class RotationProgramService {
 
     return program;
   }
+
+  private async buildJuniorRotationPlan(tx: PrismaService, programId: string) {
+    const program = await tx.rotationProgram.findUnique({
+      where: { id: programId },
+    });
+    if (!program) throw new NotFoundException('RotationProgram not found');
+    if (program.status !== ProgramStatus.ACTIVE) {
+      throw new BadRequestException('RotationProgram is not ACTIVE');
+    }
+    const juniorBlocks = await tx.programBlock.findMany({
+      where: { programId, type: ProgramBlockType.JUNIOR_BLOCK },
+      orderBy: { order: 'asc' },
+    });
+    if (juniorBlocks.length !== 4) {
+      throw new BadRequestException(
+        'Expected 4 JUNIOR_BLOCK blocks. Start the program first.',
+      );
+    }
+    const links = await tx.programOffering.findMany({
+      where: { programId, type: ProgramOfferingType.INDUCCION },
+      select: { offeringId: true },
+    });
+
+    const offeringId = links[0].offeringId;
+    const juniors = await tx.enrollment.findMany({
+      where: {
+        offeringId,
+        status: EnrollmentStatus.APPROVED,
+        track: EnrollmentTrack.INDUCCION,
+      },
+      select: { id: true, studentId: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!juniors.length) {
+      throw new BadRequestException('No approved INDUCCION enrollments found');
+    }
+
+    const roleFor = (studentIndex: number, blockIndex: number) =>
+      ROLE_ORDER[(studentIndex + blockIndex) % 4];
+    const countsByBlock = juniorBlocks.map((block, b) => {
+      const counts: Record<JobRole, number> = {
+        [JobRole.QA]: 0,
+        [JobRole.FRONTEND]: 0,
+        [JobRole.BACKEND]: 0,
+        [JobRole.DEVOPS]: 0,
+      };
+      for (let i = 0; i < juniors.length; i++) counts[roleFor(i, b)]++;
+      return {
+        blockId: block.id,
+        order: block.order,
+        counts,
+        total: juniors.length,
+      };
+    });
+
+    return {
+      programId,
+      offeringId,
+      juniorBlocks,
+      juniors,
+      roleFor,
+      countsByBlock,
+    };
+  }
+
+  async previewJuniorRotation(programId: string) {
+    const plan = await this.buildJuniorRotationPlan(this.prisma, programId);
+    const perStudent = plan.juniors.map((j, i) => ({
+      enrollmentId: j.id,
+      studentId: j.studentId,
+      roles: plan.juniorBlocks.map((b, bi) => ({
+        blockId: b.id,
+        order: b.order,
+        role: plan.roleFor(i, bi),
+      })),
+    }));
+    return {
+      programId: plan.programId,
+      offeringId: plan.offeringId,
+      juniorsTotal: plan.juniors.length,
+      blocks: plan.countsByBlock,
+      plan: perStudent,
+    };
+  }
 }

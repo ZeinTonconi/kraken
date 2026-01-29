@@ -2,6 +2,8 @@ import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { RotationProgramService } from './rotation-program.service';
 import { StartProgramDto } from './dto/start-program.dto';
 import { GenerateTeamsDto } from './dto/generate-teams.dto';
+import { GenerateJuniorRotationDto } from './dto/generate-junior-rotation.dto';
+import { PreviewJuniorRotationDTO } from './dto/preview-junior-rotation.dto';
 
 @Controller('rotation-programs')
 export class RotationProgramsController {
@@ -25,4 +27,12 @@ export class RotationProgramsController {
   getProgram(@Param('id') id: string) {
     return this.rotationPrograms.getProgram(id);
   }
+  
+  @Get(':programId/juniors/rotation-preview')
+  previewJuniorRotation(
+    @Param('programId') programId: string
+  ) {
+    return this.rotationPrograms.previewJuniorRotation(programId);
+  }
+
 }
