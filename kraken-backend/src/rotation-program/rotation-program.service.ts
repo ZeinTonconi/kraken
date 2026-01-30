@@ -696,6 +696,8 @@ export class RotationProgramService {
       where: { programId, type: ProgramOfferingType.INDUCCION },
       select: { offeringId: true },
     });
+    if (links.length === 0)
+      throw new BadRequestException('No INDUCCION offering linked');
 
     const offeringId = links[0].offeringId;
     const juniors = await tx.enrollment.findMany({
@@ -757,5 +759,113 @@ export class RotationProgramService {
       blocks: plan.countsByBlock,
       plan: perStudent,
     };
+  }
+  async applyJuniorRotation(programId: string, force = false) {
+    return this.prisma.$transaction(async (tx) => {
+      const plan = await this.buildJuniorRotationPlan(tx as any, programId);
+      const offering = await tx.courseOffering.findUnique({
+        where: { id: plan.offeringId },
+        select: { teacherId: true },
+      });
+      if (!offering) throw new NotFoundException('Offering not found');
+
+      const blockIds = plan.juniorBlocks.map((b) => b.id);
+      const existing = await tx.teamMembership.count({
+        where: { blockId: { in: blockIds } },
+      });
+
+      if (existing > 0 && !force) {
+        throw new ConflictException('Junior rotation already applied');
+      }
+
+      if (existing > 0 && force) {
+        await tx.teamMembership.deleteMany({
+          where: { blockId: { in: blockIds } },
+        });
+
+        await tx.team.deleteMany({
+          where: {
+            programId,
+            offeringId: plan.offeringId,
+          },
+        });
+      }
+
+      const teamsToCreate: {
+        id: string;
+        name: string;
+        offeringId: string;
+        programId: string;
+        leaderBlockId: null;
+        createdBy: string;
+      }[] = [];
+
+      const teamIdByBlockRole = new Map<string, string>();
+
+      for (const block of plan.juniorBlocks) {
+        for (const role of ROLE_ORDER) {
+          const teamId = randomUUID();
+          teamsToCreate.push({
+            id: teamId,
+            name: `JUNIORS-${role}-Block-${block.order}`,
+            offeringId: plan.offeringId,
+            programId,
+            leaderBlockId: null,
+            createdBy: offering.teacherId,
+          });
+          teamIdByBlockRole.set(`${block.id}:${role}`, teamId);
+        }
+      }
+      await tx.team.createMany({ data: teamsToCreate });
+      const membershipsToCreate: {
+        teamId: string;
+        userId: string;
+        enrollmentId: string;
+        blockId: string;
+        teamRole: TeamRole;
+        jobRole: JobRole;
+      }[] = [];
+
+      for (let i = 0; i < plan.juniors.length; i += 1) {
+        const junior = plan.juniors[i];
+
+        for (let bi = 0; bi < plan.juniorBlocks.length; bi += 1) {
+          const block = plan.juniorBlocks[bi];
+          const role = plan.roleFor(i, bi);
+
+          const teamId = teamIdByBlockRole.get(`${block.id}:${role}`)!;
+
+          membershipsToCreate.push({
+            teamId,
+            userId: junior.studentId,
+            enrollmentId: junior.id,
+            blockId: block.id,
+            teamRole: TeamRole.MEMBER,
+            jobRole: role,
+          });
+        }
+      }
+
+      await tx.teamMembership.createMany({ data: membershipsToCreate });
+      const perStudent = plan.juniors.map((j, i) => ({
+        enrollmentId: j.id,
+        studentId: j.studentId,
+        roles: plan.juniorBlocks.map((b, bi) => ({
+          blockId: b.id,
+          order: b.order,
+          role: plan.roleFor(i, bi),
+        })),
+      }));
+
+      return {
+        programId: plan.programId,
+        offeringId: plan.offeringId,
+        juniorsTotal: plan.juniors.length,
+        teamsCreated: teamsToCreate.length,
+        membershipsCreated: membershipsToCreate.length,
+        blocks: plan.countsByBlock,
+        plan: perStudent,
+      };
+    });
   }
 }
